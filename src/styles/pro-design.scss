@@ -1,0 +1,131 @@
+@use 'sass:math';
+
+$pro-primary: #409eff;
+$pro-success: #67c23a;
+$pro-warning: #e6a23c;
+$pro-danger: #f56c6c;
+$pro-info: #909399;
+
+$pro-base-font-size: 14px;
+$pro-tag-font-size: 12px;
+
+$pro-border-radius: 6px;
+$pro-border-color: #e4e4e7;
+$pro-border-light: #f0f0f0;
+
+$pro-dialog-padding: 24px;
+$pro-table-radius: 6px;
+
+.pro-dialog {
+  .el-dialog {
+    border-radius: $pro-border-radius;
+    overflow: hidden;
+
+    .el-dialog__header {
+      padding: $pro-dialog-padding $pro-dialog-padding 16px;
+      margin-right: 0;
+      border-bottom: 1px solid $pro-border-light;
+
+      .el-dialog__title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #303133;
+      }
+    }
+
+    .el-dialog__body {
+      padding: $pro-dialog-padding;
+    }
+
+    .el-dialog__footer {
+      padding: 16px $pro-dialog-padding $pro-dialog-padding;
+      border-top: 1px solid $pro-border-light;
+    }
+  }
+}
+
+.pro-table {
+  .el-table {
+    border-radius: $pro-table-radius;
+    overflow: hidden;
+    border: 1px solid $pro-border-light;
+
+    th.el-table__cell {
+      background-color: #fafafa;
+      font-size: $pro-base-font-size;
+      font-weight: 600;
+      color: $pro-info;
+    }
+
+    td.el-table__cell {
+      font-size: $pro-base-font-size;
+      color: #606266;
+    }
+
+    .el-table__row {
+      &:hover > td.el-table__cell {
+        background-color: #f5f7fa;
+      }
+    }
+
+    .el-tag {
+      font-size: $pro-tag-font-size;
+    }
+
+    .el-button + .el-button {
+      margin-left: 12px;
+    }
+
+    .status-cell {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-right: 6px;
+        flex-shrink: 0;
+
+        &.online {
+          background-color: $pro-success;
+        }
+
+        &.offline {
+          background-color: #c0c0c0;
+        }
+      }
+    }
+  }
+}
+
+.pro-card {
+  .el-card {
+    border-radius: 8px;
+    border: 1px solid $pro-border-color;
+
+    .el-card__header {
+      padding: 16px 20px;
+      border-bottom: 1px solid $pro-border-light;
+      font-size: 15px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .el-card__body {
+      padding: 20px;
+    }
+  }
+}
+
+.pro-tooltip {
+  max-width: 280px !important;
+
+  .el-tooltip__popper {
+    max-width: 280px;
+    word-break: break-word;
+    white-space: normal;
+    line-height: 1.5;
+  }
+}
