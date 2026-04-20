@@ -1,5 +1,6 @@
 <script setup>
 import { reactive } from 'vue'
+import { QuestionFilled } from '@element-plus/icons-vue'
 import InfoLabel from '@/components/InfoLabel.vue'
 import { logOperation } from '@/utils/auditLogger'
 
@@ -21,7 +22,21 @@ const save = () => {
         <span class="card-title">AI 模型配置</span>
       </template>
       <el-form :model="form" label-width="120px" class="config-form">
-        <el-form-item label="Dify API Key">
+        <el-form-item>
+          <template #label>
+            <span style="display: inline-flex; align-items: center; gap: 4px;">
+              Dify API Key
+              <el-tooltip placement="top" effect="dark" popper-class="pro-tooltip">
+                <template #content>
+                  <div>
+                    <div style="font-weight: 600; margin-bottom: 6px;">Dify API Key</div>
+                    <div style="line-height: 1.6;">用于连接 Dify 平台 AI 模型的密钥凭证，可在 Dify 控制台「设置 → API Key」页面复制获取。</div>
+                  </div>
+                </template>
+                <el-icon style="color: #909399; cursor: pointer; vertical-align: middle;"><QuestionFilled /></el-icon>
+              </el-tooltip>
+            </span>
+          </template>
           <el-input
             v-model="form.apiKey"
             type="password"
@@ -29,14 +44,30 @@ const save = () => {
             placeholder="请输入 Dify API Key"
           />
         </el-form-item>
-        <el-form-item label="接口地址">
+        <el-form-item>
+          <template #label>
+            <span style="display: inline-flex; align-items: center; gap: 4px;">
+              接口地址
+              <el-tooltip placement="top" effect="dark" popper-class="pro-tooltip">
+                <template #content>
+                  <div>
+                    <div style="font-weight: 600; margin-bottom: 6px;">接口地址</div>
+                    <div style="line-height: 1.6;">Dify API 的后端服务地址，默认 https://api.dify.ai/v1。若您使用私有化部署，请替换为对应的域名或 IP + 端口。</div>
+                  </div>
+                </template>
+                <el-icon style="color: #909399; cursor: pointer; vertical-align: middle;"><QuestionFilled /></el-icon>
+              </el-tooltip>
+            </span>
+          </template>
           <el-input v-model="form.baseUrl" placeholder="https://api.dify.ai/v1" />
         </el-form-item>
-        <el-form-item label="系统提示词">
-          <div class="form-label-row">
-            <span>System Prompt</span>
-            <InfoLabel dict-key="system_prompt_hint" />
-          </div>
+        <el-form-item>
+          <template #label>
+            <span style="display: inline-flex; align-items: center; gap: 4px;">
+              系统提示词
+              <InfoLabel dict-key="system_prompt_hint" />
+            </span>
+          </template>
           <el-input
             v-model="form.systemPrompt"
             type="textarea"

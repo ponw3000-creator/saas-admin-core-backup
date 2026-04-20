@@ -10,11 +10,13 @@ import InfoLabel from '@/components/InfoLabel.vue'
 import { useAppStore } from '@/store/app'
 import { useChatStore } from '@/store/chatStore'
 import { useReplyStore } from '@/store/replyStore'
+import { useChannelStore } from '@/store/channelStore'
 
 const trackEvent = inject('trackEvent', () => {})
 const appStore = useAppStore()
 const chatStore = useChatStore()
 const replyStore = useReplyStore()
+const channelStore = useChannelStore()
 
 const themeColor = computed(() => appStore.themeColor)
 const animDuration = computed(() => `${appStore.aiAnimSpeed}s`)
@@ -25,6 +27,7 @@ const sessions = ref([
     id: 1,
     name: '张三',
     status: '在线',
+    channel_id: 1,
     lastMsg: '我想咨询产品报价',
     time: '刚刚',
     summary: '客户对企业版套餐感兴趣，询问价格区间与功能差异。客服已介绍基础版与高级版的主要区别，客户表示需要内部讨论后回复。',
@@ -38,6 +41,7 @@ const sessions = ref([
     id: 2,
     name: '李四',
     status: '在线',
+    channel_id: 3,
     lastMsg: '退款申请审核进度',
     time: '10:32',
     summary: '客户提交退款申请已5个工作日，询问审核进度。客服查询后告知正在财务复核阶段，预计2-3个工作日内完成。',
@@ -47,6 +51,7 @@ const sessions = ref([
     id: 3,
     name: '王五',
     status: '离线',
+    channel_id: 2,
     lastMsg: '发票怎么开具',
     time: '09:15',
     summary: '客户咨询如何申请电子发票，客服已发送操作指引链接，客户未再回复。',
@@ -56,6 +61,7 @@ const sessions = ref([
     id: 4,
     name: '赵六',
     status: '在线',
+    channel_id: 5,
     lastMsg: '会员如何升级',
     time: '昨天',
     summary: '客户询问会员升级规则与权益差异，已介绍当前等级特权及升级条件，客户表示考虑中。',
@@ -65,6 +71,7 @@ const sessions = ref([
     id: 5,
     name: '钱七',
     status: '离线',
+    channel_id: 4,
     lastMsg: '密码忘了怎么办',
     time: '昨天',
     summary: '客户忘记登录密码，客服引导通过邮箱验证码重置密码，客户已成功重置。',
@@ -469,7 +476,7 @@ const handleGenerateSummary = async () => {
         <div class="profile-label">基本信息</div>
         <div class="profile-row">
           <span class="label">来源渠道</span>
-          <span class="value">PC网页</span>
+          <span class="value">{{ channelStore.getChannelName(activeSession.channel_id) }}</span>
         </div>
         <div class="profile-row">
           <span class="label">当前页面</span>

@@ -1,17 +1,82 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import {
   ChatDotRound,
   Tickets,
   DataLine,
   Setting,
-  UserFilled
+  UserFilled,
+  OfficeBuilding,
+  InfoFilled
 } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import { useChatStore } from '@/store/chatStore'
+import { hasMenuPermission } from '@/utils/permission'
 import Watermark from '@/components/Watermark.vue'
+import ProAvatar from '@/components/ProAvatar/index.vue'
 
 const chatStore = useChatStore()
-const isAdmin = computed(() => chatStore.currentUserRole === 'admin')
+const isSuperAdmin = computed(() => chatStore.currentUserRole === 'super_admin')
+
+const roleLabels = {
+  super_admin: '超级管理员',
+  admin: '管理员',
+  leader: '主管',
+  agent: '客服'
+}
+
+const currentUserName = computed(() => roleLabels[chatStore.currentUserRole] || '客服')
+
+const MENU_MAP = {
+  chat: 'menu:chat',
+  ticket: 'menu:ticket',
+  dashboard: 'menu:dashboard',
+  preferences: 'menu:preferences',
+  ai: 'menu:ai',
+  llm: 'menu:llm',
+  knowledge: 'menu:knowledge',
+  team: 'menu:team',
+  role: 'menu:role',
+  oplog: 'menu:oplog',
+  dictionary: 'menu:dictionary',
+  channel: 'menu:channel'
+}
+
+const checkMenu = (menuKey) => {
+  if (isSuperAdmin.value) return true
+  const permCode = MENU_MAP[menuKey]
+  if (!permCode) return true
+  return hasMenuPermission(permCode)
+}
+
+const visibleMenus = computed(() => ({
+  ai: checkMenu('ai'),
+  llm: checkMenu('llm'),
+  knowledge: checkMenu('knowledge'),
+  team: checkMenu('team'),
+  role: checkMenu('role'),
+  oplog: checkMenu('oplog'),
+  dictionary: checkMenu('dictionary'),
+  channel: checkMenu('channel')
+}))
+
+const handleRoleChange = async (newRole) => {
+  chatStore.switchRole(newRole)
+  const roleLabels = {
+    super_admin: '超级管理员',
+    admin: '管理员',
+    leader: '主管',
+    agent: '客服'
+  }
+  ElMessage.success(`已切换至 ${roleLabels[newRole] || newRole} 身份，系统正在重新加载...`)
+  setTimeout(() => {
+    window.location.reload()
+  }, 500)
+}
+
+onMounted(() => {
+  chatStore.initFromStorage()
+})
 </script>
 
 <template>
@@ -24,19 +89,29 @@ const isAdmin = computed(() => chatStore.currentUserRole === 'admin')
       <div class="header-right">
         <div class="role-switch">
           <span class="role-label">角色：</span>
-          <el-switch
+          <el-select
             v-model="chatStore.currentUserRole"
-            active-value="admin"
-            inactive-value="normal"
-            active-text="管理员"
-            inactive-text="客服"
-            inline-prompt
+            size="small"
+            style="width: 120px;"
+            @change="handleRoleChange"
+          >
+            <el-option label="超级管理员" value="super_admin" />
+            <el-option label="管理员" value="admin" />
+            <el-option label="主管" value="leader" />
+            <el-option label="客服" value="agent" />
+          </el-select>
+          <el-input
+            v-model="chatStore.currentUserPath"
+            size="small"
+            style="width: 100px; margin-left: 8px;"
+            placeholder="path"
+            @change="chatStore.setUserPath($event)"
           />
         </div>
         <el-dropdown>
           <span class="user-info">
-            <el-icon><UserFilled /></el-icon>
-            <span>{{ isAdmin ? '管理员' : '客服' }}</span>
+            <ProAvatar :name="currentUserName" :size="28" />
+            <span style="margin-left: 8px;">{{ currentUserName }}</span>
           </span>
           <template #dropdown>
             <el-dropdown-menu>
@@ -91,30 +166,40 @@ const isAdmin = computed(() => chatStore.currentUserRole === 'admin')
               <el-icon><Setting /></el-icon>
               <span>系统设置</span>
             </template>
+            <el-menu-item index="/setting/enterprise">
+              企业资料
+            </el-menu-item>
+            <el-menu-item index="/setting/security">
+              安全中心
+            </el-menu-item>
             <el-menu-item index="/setting">基础偏好</el-menu-item>
             <el-menu-item
-              v-if="chatStore.currentUserRole === 'admin'"
+              v-if="visibleMenus.ai"
               index="/setting/ai"
             >AI 模型配置</el-menu-item>
             <el-menu-item
-              v-if="chatStore.currentUserRole === 'admin'"
+              v-if="visibleMenus.llm"
               index="/setting/llm"
             >LLM 基座配置</el-menu-item>
             <el-menu-item index="/setting/knowledge">知识与话术</el-menu-item>
             <el-menu-item
-              v-if="chatStore.currentUserRole === 'admin'"
+              v-if="visibleMenus.team"
               index="/setting/team"
             >团队与权限</el-menu-item>
             <el-menu-item
-              v-if="chatStore.currentUserRole === 'admin'"
+              v-if="visibleMenus.role"
               index="/setting/role"
             >角色管理</el-menu-item>
             <el-menu-item
-              v-if="chatStore.currentUserRole === 'admin'"
+              v-if="visibleMenus.oplog"
               index="/setting/oplog"
             >操作日志</el-menu-item>
             <el-menu-item
-              v-if="chatStore.currentUserRole === 'admin'"
+              v-if="visibleMenus.channel"
+              index="/setting/channel"
+            >渠道接入</el-menu-item>
+            <el-menu-item
+              v-if="visibleMenus.dictionary"
               index="/setting/dict"
             >字典管理</el-menu-item>
           </el-sub-menu>

@@ -1,0 +1,33 @@
+/* 协议：强制表单标签进入弹性居中模式 */
+.el-form-item {
+  .el-form-item__label {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: flex-start;
+    line-height: normal !important;
+    white-space: nowrap !important;
+
+    span {
+      display: inline-flex;
+      align-items: center;
+    }
+  }
+}
+
+/* 协议：原子组件触发器标准 */
+.pro-help-trigger {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 4px;
+  flex-shrink: 0;
+  height: 1em;
+}
+
+/* 协议：气泡样式 */
+.pro-help-popper {
+  max-width: 260px !important;
+  line-height: 1.5 !important;
+  word-break: break-word;
+  white-space: normal;
+  text-align: center;
+}

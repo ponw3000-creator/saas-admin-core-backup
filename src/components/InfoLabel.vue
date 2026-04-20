@@ -17,10 +17,16 @@ const entry = computed(() => globalStore.metricsDict[props.dictKey])
 <template>
   <el-tooltip
     v-if="entry"
-    :content="`${entry.title}：${entry.desc}`"
     placement="top"
-    effect="light"
+    effect="dark"
+    popper-class="pro-tooltip"
   >
+    <template #content>
+      <div>
+        <div style="font-weight: 600; margin-bottom: 6px;">{{ entry.title }}</div>
+        <div style="line-height: 1.6;">{{ entry.desc }}</div>
+      </div>
+    </template>
     <el-icon class="info-icon"><QuestionFilled /></el-icon>
   </el-tooltip>
 </template>

@@ -1,0 +1,12 @@
+# SaaS Project Master Specification
+
+BEFORE starting any task, you MUST automatically read the active specs in the `.rules/` directory:
+
+- **Coding Spirit**: @.rules/01-dev-spirit.md
+- **API & Data**: @.rules/02-api-contract.md
+- **UI & CSS**: @.rules/03-ui-style.md
+- **Security**: @.rules/04-security.md
+
+**CRITICAL RULE**:
+1. Files in `.rules/_archive/` are for historical backup ONLY. DO NOT read or follow them.
+2. Before writing code, state which spec file you are applying to the current task.

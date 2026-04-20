@@ -1,17 +1,19 @@
 <script setup>
-import { ref, reactive, nextTick, onMounted } from 'vue'
-import { Plus, ArrowUp, ArrowDown, Top, QuestionFilled } from '@element-plus/icons-vue'
+import { ref, reactive, nextTick, onMounted, computed } from 'vue'
+import { Plus, ArrowUp, ArrowDown, Top, QuestionFilled, Delete } from '@element-plus/icons-vue'
 import { QuillEditor } from '@vueup/vue-quill'
 import '@vueup/vue-quill/dist/vue-quill.snow.css'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { trackOperation } from '@/utils/monitor'
 import { logOperation } from '@/utils/auditLogger'
 import { useConfirmDelete } from '@/utils/useConfirmDelete'
 import Sortable from 'sortablejs'
 import InfoLabel from '@/components/InfoLabel.vue'
 import { useReplyStore } from '@/store/replyStore'
+import { useChannelStore } from '@/store/channelStore'
 
 const replyStore = useReplyStore()
+const channelStore = useChannelStore()
 const { confirmDelete } = useConfirmDelete()
 
 const MAX_ANSWER_LENGTH = 500
@@ -50,13 +52,12 @@ const currentReplyIndex = ref(-1)
 const isCapsuleEditing = ref(false)
 const currentCapsuleIndex = ref(-1)
 
-const channelOptions = [
-  { value: 'ALL', label: '全部适用' },
+const channelOptions = computed(() => [
   { value: 'global', label: '全局通用' },
-  { value: 'wechat', label: '微信小程序 A' },
-  { value: 'app', label: 'App 商城 B' },
-  { value: 'crm', label: '内部 CRM' }
-]
+  ...channelStore.channelList
+    .filter(ch => ch.name !== '全部适用')
+    .map(ch => ({ value: ch.id, label: ch.name }))
+])
 
 const capsuleEventOptions = [
   { value: 'price_inquiry', label: 'price_inquiry - 价格咨询' },
@@ -76,15 +77,15 @@ const relatedQuestionsOptions = ref([
 ])
 
 const faqData = reactive([
-  { id: 1, question: '企业版价格是多少？', enabled: true, priority: 1, startDate: '2024-01-01', endDate: '2024-12-31', channels: ['global', 'wechat'] },
-  { id: 2, question: '如何申请退款？', enabled: true, priority: 2, startDate: '2024-01-01', endDate: '2024-12-31', channels: ['global', 'app'] },
-  { id: 3, question: '怎么联系人工客服？', enabled: false, priority: 3, startDate: '2024-03-01', endDate: '2024-06-30', channels: ['crm'] }
+  { id: 1, question: '企业版价格是多少？', enabled: true, priority: 1, startDate: '2024-01-01', endDate: '2024-12-31', channels: ['global', 1] },
+  { id: 2, question: '如何申请退款？', enabled: true, priority: 2, startDate: '2024-01-01', endDate: '2024-12-31', channels: ['global', 4] },
+  { id: 3, question: '怎么联系人工客服？', enabled: false, priority: 3, startDate: '2024-03-01', endDate: '2024-06-30', channels: [3] }
 ])
 
 const capsuleData = reactive([
   { id: 1, name: '价格咨询', event: 'price_inquiry', enabled: true, channels: ['global'] },
-  { id: 2, name: '人工客服', event: 'transfer_human', enabled: true, channels: ['wechat', 'app'] },
-  { id: 3, name: '返回首页', event: 'go_home', enabled: false, channels: ['crm'] }
+  { id: 2, name: '人工客服', event: 'transfer_human', enabled: true, channels: [1, 4] },
+  { id: 3, name: '返回首页', event: 'go_home', enabled: false, channels: [3] }
 ])
 
 const faqTableRef = ref(null)
@@ -179,10 +180,23 @@ const handleEdit = (row) => {
   trackOperation('知识与话术', '编辑 FAQ', { id: row.id, question: row.question })
 }
 
-const handleDelete = (row) => {
-  confirmDelete(row.question, () => {
+const handleDelete = async (row) => {
+  try {
+    await ElMessageBox.confirm(
+      '确认要删除话术 <strong>「' + row.question + '」</strong> 吗？<br/><span style="color: #909399; font-size: 13px;">删除后将无法恢复。</span>',
+      '删除确认',
+      {
+        dangerouslyUseHTMLString: true,
+        confirmButtonText: '确认删除',
+        cancelButtonText: '取消',
+        confirmButtonClass: 'el-button--danger',
+        type: 'warning'
+      }
+    )
     logOperation('知识与话术', '删除 FAQ', { id: row.id, question: row.question }, '-')
-  })
+    ElMessage.success('删除成功')
+  } catch {
+  }
 }
 
 const openReplyDialog = () => {
@@ -207,10 +221,23 @@ const handleReplyEdit = (row, index) => {
   replyDialogVisible.value = true
 }
 
-const handleReplyDelete = (index, shortcut) => {
-  confirmDelete(shortcut, () => {
+const handleReplyDelete = async (index, shortcut) => {
+  try {
+    await ElMessageBox.confirm(
+      '确认要删除快捷回复 <strong>「' + shortcut + '」</strong> 吗？<br/><span style="color: #909399; font-size: 13px;">删除后将无法恢复。</span>',
+      '删除确认',
+      {
+        dangerouslyUseHTMLString: true,
+        confirmButtonText: '确认删除',
+        cancelButtonText: '取消',
+        confirmButtonClass: 'el-button--danger',
+        type: 'warning'
+      }
+    )
     replyStore.deleteReply(index)
-  })
+    ElMessage.success('删除成功')
+  } catch {
+  }
 }
 
 const handleReplySubmit = () => {
@@ -254,9 +281,23 @@ const openCapsuleDialog = (row, index) => {
   capsuleDialogVisible.value = true
 }
 
-const handleCapsuleDelete = (index) => {
-  capsuleData.splice(index, 1)
-  ElMessage.success('删除成功')
+const handleCapsuleDelete = async (index) => {
+  try {
+    await ElMessageBox.confirm(
+      '确认要删除引导胶囊 <strong>「' + capsuleData[index]?.name + '」</strong> 吗？<br/><span style="color: #909399; font-size: 13px;">删除后将无法恢复。</span>',
+      '删除确认',
+      {
+        dangerouslyUseHTMLString: true,
+        confirmButtonText: '确认删除',
+        cancelButtonText: '取消',
+        confirmButtonClass: 'el-button--danger',
+        type: 'warning'
+      }
+    )
+    capsuleData.splice(index, 1)
+    ElMessage.success('删除成功')
+  } catch {
+  }
 }
 
 const handleCapsuleSubmit = () => {
@@ -362,7 +403,10 @@ const handleCapsuleSubmit = () => {
             <el-table-column label="操作" width="120" align="center">
               <template #default="{ row }">
                 <el-button link type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
-                <el-button link type="danger" size="small" @click="handleDelete(row)">删除</el-button>
+                <el-button type="danger" link size="small" @click="handleDelete(row)">
+                  <el-icon><Delete /></el-icon>
+                  删除
+                </el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -425,7 +469,10 @@ const handleCapsuleSubmit = () => {
             <el-table-column label="操作" width="120" align="center">
               <template #default="{ row, $index }">
                 <el-button link type="primary" @click="openCapsuleDialog(row, $index)">编辑</el-button>
-                <el-button link type="danger" @click="handleCapsuleDelete($index)">删除</el-button>
+                <el-button type="danger" link @click="handleCapsuleDelete($index)">
+                  <el-icon><Delete /></el-icon>
+                  删除
+                </el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -478,7 +525,10 @@ const handleCapsuleSubmit = () => {
             <el-table-column label="操作" width="120" align="center">
               <template #default="{ row, $index }">
                 <el-button link type="primary" size="small" @click="handleReplyEdit(row, $index)">编辑</el-button>
-                <el-button link type="danger" size="small" @click="handleReplyDelete($index, row.shortcut)">删除</el-button>
+                <el-button type="danger" link size="small" @click="handleReplyDelete($index, row.shortcut)">
+                  <el-icon><Delete /></el-icon>
+                  删除
+                </el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -737,8 +787,8 @@ const handleCapsuleSubmit = () => {
 }
 
 .knowledge-tabs :deep(.el-tabs__header) {
-  background: #fafafa;
-  border-radius: 6px 6px 0 0;
+  background: #f4f5f7;
+  border-radius: 6px;
   padding: 4px;
   margin: 0;
 }
@@ -748,12 +798,17 @@ const handleCapsuleSubmit = () => {
   height: 34px;
   line-height: 34px;
   font-size: 14px;
+  background: transparent;
+  color: #606266;
+  font-weight: 400;
 }
 
 .knowledge-tabs :deep(.el-tabs__item.is-active) {
   background: #ffffff;
   border-radius: 4px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08), 0 0 1px rgba(0, 0, 0, 0.1);
+  font-weight: 600;
+  color: var(--el-color-primary);
 }
 
 .knowledge-tabs :deep(.el-tabs__content) {
@@ -855,4 +910,6 @@ const handleCapsuleSubmit = () => {
   color: #c0c4cc;
   font-style: normal;
 }
+
+
 </style>

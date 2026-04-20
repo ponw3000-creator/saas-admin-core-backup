@@ -129,3 +129,27 @@ $pro-table-radius: 6px;
     line-height: 1.5;
   }
 }
+
+.help-icon {
+  margin-left: 4px;
+  color: #909399;
+  cursor: pointer;
+  vertical-align: middle;
+  font-size: 14px;
+
+  &.danger {
+    color: #cf1322;
+  }
+
+  &.warning {
+    color: #e6a23c;
+  }
+}
+
+.el-tooltip__popper {
+  max-width: 320px;
+  word-break: break-word;
+  white-space: normal;
+  line-height: 1.6;
+  text-align: center;
+}
