@@ -8,6 +8,7 @@ import { useChatStore } from '@/store/chatStore'
 import { ROLE_WEIGHT_MAP } from '@/store/chatStore'
 import { checkPermission, buildQueryParams } from '@/utils/permission'
 import ProAvatar from '@/components/ProAvatar/index.vue'
+import { teamMockData } from '@/mock/index.js'
 
 const { confirmDelete } = useConfirmDelete()
 const chatStore = useChatStore()
@@ -22,6 +23,14 @@ const CHANNEL_DICT = {
   'XHS': '小红书店铺',
   'WX_GZH': '微信公众号'
 }
+
+// [业务规范] 模拟当前登录用户身份 - 实际应从 authStore 获取
+const currentUser = reactive({
+  id: 101,
+  name: '当前登录组长',
+  role: 'supervisor', // admin | supervisor | agent
+  groupId: 2 // 售后支持组的 ID
+})
 
 const CHANNEL_DICT_OPTIONS = Object.entries(CHANNEL_DICT).map(([value, label]) => ({ label, value }))
 
@@ -40,178 +49,7 @@ const groupOptions = computed(() =>
   groupListData.map(g => ({ label: g.name, value: g.id }))
 )
 
-const tableData = reactive([
-  {
-    id: 1,
-    account: 'admin@company.com',
-    realName: '张明',
-    nickName: '小明',
-    group: '售前',
-    groupIds: [1, 2],
-    path: '1.2.3',
-    weight: 80,
-    roleAssignments: [
-      { roleId: '1', expireType: 'permanent', startTime: '', endTime: '' },
-      { roleId: '2', expireType: 'limited', startTime: '2026-01-01 00:00:00', endTime: '2026-12-31 23:59:59' }
-    ],
-    channel: '微信',
-    channels: [1, 2, 3],
-    maxConcurrent: 10,
-    online: true,
-    isArchived: false,
-    status: 'active',
-    joinDate: '2024-01-15',
-    gender: '男'
-  },
-  {
-    id: 2,
-    account: 'pending@company.com',
-    realName: '李娜',
-    nickName: '娜美',
-    group: '售后',
-    groupIds: [],
-    path: '1.2.3.4',
-    weight: 10,
-    roleAssignments: [
-      { roleId: '3', expireType: 'permanent', startTime: '', endTime: '' }
-    ],
-    channel: '官网',
-    channels: [1, 2],
-    maxConcurrent: 5,
-    online: false,
-    isArchived: false,
-    status: 'inactive',
-    joinDate: '2024-03-20',
-    gender: '女'
-  },
-  {
-    id: 3,
-    account: 'expired@company.com',
-    realName: '王浩',
-    nickName: '浩哥',
-    group: '技术',
-    groupIds: [3],
-    path: '1.2.3.5',
-    weight: 10,
-    roleAssignments: [
-      { roleId: '3', expireType: 'limited', startTime: '2024-01-01 00:00:00', endTime: '2024-12-31 23:59:59' },
-      { roleId: '4', expireType: 'permanent', startTime: '', endTime: '' }
-    ],
-    channel: 'App',
-    channels: [4],
-    maxConcurrent: 3,
-    online: false,
-    isArchived: false,
-    status: 'active',
-    joinDate: '2024-02-10',
-    gender: '男'
-  },
-  {
-    id: 4,
-    account: 'disabled@company.com',
-    realName: '陈婷',
-    nickName: '婷婷',
-    group: '售前',
-    groupIds: [1],
-    path: '1.2.6',
-    weight: 10,
-    roleAssignments: [
-      { roleId: '4', expireType: 'permanent', startTime: '', endTime: '' }
-    ],
-    channel: '微信',
-    channels: [1],
-    maxConcurrent: 5,
-    online: false,
-    isArchived: false,
-    status: 'disabled',
-    joinDate: '2023-11-05',
-    gender: '女'
-  },
-  {
-    id: 5,
-    account: 'liuyang@company.com',
-    realName: '刘洋',
-    nickName: '洋洋',
-    group: '售后',
-    groupIds: [2],
-    path: '1.2.7',
-    weight: 10,
-    roleAssignments: [
-      { roleId: '4', expireType: 'permanent', startTime: '', endTime: '' }
-    ],
-    channel: '官网',
-    channels: [3],
-    maxConcurrent: 8,
-    online: true,
-    isArchived: false,
-    status: 'active',
-    joinDate: '2024-05-01',
-    gender: '男'
-  },
-  {
-    id: 6,
-    account: 'zhaomei@company.com',
-    realName: '赵美',
-    nickName: '小美',
-    group: '售前',
-    groupIds: [1],
-    path: '1.2.8',
-    weight: 10,
-    roleAssignments: [
-      { roleId: '4', expireType: 'permanent', startTime: '', endTime: '' }
-    ],
-    channel: 'App',
-    channels: [4, 5],
-    maxConcurrent: 6,
-    online: true,
-    isArchived: false,
-    status: 'active',
-    joinDate: '2024-06-15',
-    gender: '女'
-  },
-  {
-    id: 7,
-    account: 'sunwei@company.com',
-    realName: '孙伟',
-    nickName: '伟哥',
-    group: '技术',
-    groupIds: [3],
-    path: '1.2.9',
-    weight: 10,
-    roleAssignments: [
-      { roleId: '4', expireType: 'permanent', startTime: '', endTime: '' }
-    ],
-    channel: '微信',
-    channels: [1, 4],
-    maxConcurrent: 4,
-    online: false,
-    isArchived: false,
-    status: 'active',
-    joinDate: '2024-07-22',
-    gender: '男'
-  },
-  {
-    id: 8,
-    account: 'zhoujing@company.com',
-    realName: '周静',
-    nickName: '静静',
-    group: '售后',
-    groupIds: [2],
-    path: '1.2.10',
-    weight: 10,
-    roleAssignments: [
-      { roleId: '3', expireType: 'limited', startTime: '2024-09-01 00:00:00', endTime: '2025-09-01 23:59:59' }
-    ],
-    channel: '官网',
-    channels: [2, 3],
-    maxConcurrent: 5,
-    online: true,
-    isArchived: false,
-    status: 'active',
-    joinDate: '2024-08-30',
-    gender: '女'
-  }
-])
+const tableData = reactive([...teamMockData])
 
 const dialogVisible = ref(false)
 const isGroupDrawerVisible = ref(false)
@@ -322,6 +160,11 @@ const unassignedCount = computed(() => {
 // 已归档账号（isArchived === true）不出现在主列表中，但数据仍可通过专属查询访问。
 const filteredTableData = computed(() => {
   let data = tableData.filter(item => item.isArchived !== true)
+
+  // [业务规范] 行级数据权限控制：组长仅可见同组内的成员账号，阻断跨部门数据越权。
+  if (currentUser.role === 'supervisor') {
+    data = data.filter(item => item.groupIds && item.groupIds.includes(currentUser.groupId))
+  }
 
   if (filterView.value === 'unassigned') {
     data = data.filter(item => !item.groupIds || item.groupIds.length === 0)
@@ -590,6 +433,11 @@ const toggleColumnVisible = (key) => {
 }
 
 onMounted(() => {
+  if (currentUser.role === 'agent') {
+    ElMessage.error('您没有权限访问此页面')
+    return
+  }
+
   loadColumnsConfig()
 
   try {
@@ -1141,7 +989,8 @@ const handleDeleteGroup = (row) => {
                   </el-tooltip>
                 </span>
               </template>
-              <el-input v-model="form.account" placeholder="请输入手机号或邮箱" clearable style="width: 100%;" />
+              <!-- [业务防错] 登录账号作为 Unique Key 和 Auth 凭证，一旦创建严禁在中途篡改。如需换人必须通过"软删除+新建"流程，防止引发 Token 错乱与历史业绩污染。 -->
+              <el-input v-model="form.account" placeholder="请输入手机号或邮箱" clearable style="width: 100%;" :disabled="isEdit" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
