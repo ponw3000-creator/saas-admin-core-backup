@@ -60,23 +60,17 @@ const visibleMenus = computed(() => ({
   channel: checkMenu('channel')
 }))
 
-const handleRoleChange = async (newRole) => {
-  chatStore.switchRole(newRole)
-  const roleLabels = {
-    super_admin: '超级管理员',
-    admin: '管理员',
-    leader: '主管',
-    agent: '客服'
-  }
-  ElMessage.success(`已切换至 ${roleLabels[newRole] || newRole} 身份，系统正在重新加载...`)
-  setTimeout(() => {
-    window.location.reload()
-  }, 500)
-}
-
 onMounted(() => {
   chatStore.initFromStorage()
 })
+
+const handlePersonalCenter = () => {
+  ElMessage.info('跳转到个人中心')
+}
+
+const handleLogout = () => {
+  ElMessage.success('已退出登录')
+}
 </script>
 
 <template>
@@ -87,36 +81,20 @@ onMounted(() => {
         <span class="logo-text">企业级 SaaS 客服工作台</span>
       </div>
       <div class="header-right">
-        <div class="role-switch">
-          <span class="role-label">角色：</span>
-          <el-select
-            v-model="chatStore.currentUserRole"
-            size="small"
-            style="width: 120px;"
-            @change="handleRoleChange"
-          >
-            <el-option label="超级管理员" value="super_admin" />
-            <el-option label="管理员" value="admin" />
-            <el-option label="主管" value="leader" />
-            <el-option label="客服" value="agent" />
-          </el-select>
-          <el-input
-            v-model="chatStore.currentUserPath"
-            size="small"
-            style="width: 100px; margin-left: 8px;"
-            placeholder="path"
-            @change="chatStore.setUserPath($event)"
-          />
-        </div>
         <el-dropdown>
           <span class="user-info">
-            <ProAvatar :name="currentUserName" :size="28" />
-            <span style="margin-left: 8px;">{{ currentUserName }}</span>
+            <ProAvatar :name="currentUserName" :size="32" />
           </span>
           <template #dropdown>
             <el-dropdown-menu>
-              <el-dropdown-item>个人中心</el-dropdown-item>
-              <el-dropdown-item divided>退出登录</el-dropdown-item>
+              <li class="user-info-header">
+                <span class="user-name">{{ currentUserName }}</span>
+                <span class="user-role">{{ roleLabels[chatStore.currentUserRole] }}</span>
+              </li>
+              <el-dropdown-item @click="handlePersonalCenter">个人中心</el-dropdown-item>
+              <el-dropdown-item divided @click="handleLogout">
+                <span class="logout-text">退出登录</span>
+              </el-dropdown-item>
             </el-dropdown-menu>
           </template>
         </el-dropdown>
@@ -257,11 +235,6 @@ onMounted(() => {
   height: 100%;
 }
 
-.role-label {
-  font-size: 13px;
-  color: #8b8fa3;
-}
-
 .user-info {
   display: flex;
   align-items: center;
@@ -276,6 +249,30 @@ onMounted(() => {
 
 .user-info:hover {
   background-color: rgba(255, 255, 255, 0.08);
+}
+
+.user-info-header {
+  display: flex;
+  flex-direction: column;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  margin-bottom: 4px;
+}
+
+.user-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 2px;
+}
+
+.user-role {
+  font-size: 12px;
+  color: #909399;
+}
+
+.logout-text {
+  color: #f56c6c;
 }
 
 .body-container {
