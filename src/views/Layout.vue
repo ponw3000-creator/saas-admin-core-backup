@@ -254,6 +254,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
+  height: 100%;
 }
 
 .role-label {

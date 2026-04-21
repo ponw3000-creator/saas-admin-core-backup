@@ -422,16 +422,18 @@ const handleGenerateSummary = async () => {
         <div class="profile-label">基本信息</div>
         <div class="profile-row">
           <span class="label">来源渠道</span>
-          <span class="value">{{ channelStore.getChannelName(activeSession.channel_id) }}</span>
+          <span class="value">{{ activeSession.sourceDetail || channelStore.getChannelName(activeSession.channel_id) }}</span>
         </div>
         <div class="profile-row">
           <span class="label">当前页面</span>
-          <span class="value">产品详情</span>
+          <a class="value page-link" :href="activeSession.currentPageDetail ? 'javascript:void(0)' : '#'">{{ activeSession.currentPageDetail || '暂无页面信息' }}</a>
         </div>
-        <div class="profile-row">
+        <div class="profile-row session-duration-row">
           <span class="label">会话时长</span>
-          <InfoLabel dict-key="session_duration" />
-          <span class="value">5分20秒</span>
+          <div class="duration-with-tooltip">
+            <InfoLabel dict-key="session_duration" />
+            <span class="value">5分20秒</span>
+          </div>
         </div>
       </div>
       <el-divider />
@@ -885,6 +887,27 @@ const handleGenerateSummary = async () => {
 .profile-row .value {
   color: #333;
   font-weight: 500;
+}
+
+.profile-row .value.page-link {
+  color: #409eff;
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.profile-row.session-duration-row {
+  align-items: center;
+}
+
+.profile-row.session-duration-row .label {
+  line-height: normal;
+}
+
+.duration-with-tooltip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .profile-tags {
