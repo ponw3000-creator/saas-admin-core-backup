@@ -1,5 +1,5 @@
 <script setup>
-import { ref, inject, computed, nextTick } from 'vue'
+import { ref, inject, computed, nextTick, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { marked } from 'marked'
 import { Splitpanes, Pane } from 'splitpanes'
@@ -10,7 +10,7 @@ import InfoLabel from '@/components/InfoLabel.vue'
 import { useAppStore } from '@/store/app'
 import { useChatStore } from '@/store/chatStore'
 import { useReplyStore } from '@/store/replyStore'
-import { chatSessionsMockData } from '@/mock/index.js'
+import { chatSessionsMockData, chatSortingConfig } from '@/mock/index.js'
 import { useChannelStore } from '@/store/channelStore'
 
 const trackEvent = inject('trackEvent', () => {})
@@ -53,6 +53,12 @@ const checkSentinel = () => {
 
 const isLocked = ref(false)
 
+// [API-Ready] 动态排序权重配置 - 模拟从系统配置接口异步获取
+// TODO: [API对接] 未来将下面这行替换为: const res = await api.getSystemConfig('chat_sorting'); activeWeights.value = res.data
+const activeWeights = ref({ ...chatSortingConfig })
+
+const onlyUnread = ref(false)
+
 let msgIdCounter = 100
 
 const activeSession = computed(() => {
@@ -60,6 +66,43 @@ const activeSession = computed(() => {
     return sessionCache.value.get(activeSessionId.value)
   }
   return sessions.value.find(s => s.id === activeSessionId.value) || sessions.value[0]
+})
+
+/**
+ * === 动态会话优先级调度引擎 (Priority Scheduling Engine) ===
+ * [数据链路] 排序权重参数 (timeWeight, levelWeight, urgencyWeight) 从 systemConfig 动态读取，实现业务配置完全解耦。
+ * - [因子解析]
+ * 1. 时间分 (Time Score): 基础底线。基于 (当前时间 - 进线时间)，确保所有客户最终都能被接待。
+ * 2. 等级分 (Level Score): 商业价值。赋予 VIP 或高优先等级客户更高的插队权重。
+ * 3. 紧急分 (Urgency Score): 情绪兜底。基于内容紧急度评分进行微调。
+ * - [排序逻辑] 综合以上因子计算总分，并按降序排列，确保高优会话强制置顶。
+ */
+const processedSessions = computed(() => {
+  // 1. 过滤逻辑：根据"仅看未读"开关筛选数据
+  const filtered = onlyUnread.value
+    ? sessions.value.filter(s => s.unreadCount > 0)
+    : sessions.value
+
+  // 2. 打分逻辑：遍历会话，计算加权总分
+  const scored = filtered.map(session => {
+    const maxWaitSeconds = 30 * 60
+    const waitSeconds = (Date.now() - session.createdAt) / 1000
+    const timeScore = Math.max(0, 1 - waitSeconds / maxWaitSeconds)
+
+    const levelScore = (session.priorityLevel - 1) / 4
+
+    const urgencyScore = session.urgencyScore || 0
+
+    const totalScore =
+      activeWeights.value.timeWeight * timeScore +
+      activeWeights.value.levelWeight * levelScore +
+      activeWeights.value.urgencyWeight * urgencyScore
+
+    return { ...session, _score: totalScore }
+  })
+
+  // 3. 排序逻辑：按总分降序排列
+  return scored.sort((a, b) => b._score - a._score)
 })
 
 const selectSession = async (id) => {
@@ -243,11 +286,17 @@ const handleGenerateSummary = async () => {
       <Pane :size="18" :min-size="12" :max-size="30">
         <div class="session-list">
       <div class="session-header">
-        <span class="session-title">会话列表</span>
-        <el-badge :value="3" type="primary" />
+        <div class="session-header-left">
+          <span class="session-title">会话列表</span>
+          <el-badge :value="3" type="primary" />
+        </div>
+        <div class="session-header-right">
+          <span class="unread-label">仅看未读</span>
+          <el-switch v-model="onlyUnread" size="small" />
+        </div>
       </div>
       <div
-        v-for="s in sessions"
+        v-for="s in processedSessions"
         :key="s.id"
         class="session-item"
         :class="{ active: activeSessionId === s.id }"
@@ -497,6 +546,23 @@ const handleGenerateSummary = async () => {
   font-size: 15px;
   font-weight: 600;
   color: #333;
+}
+
+.session-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.session-header-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.unread-label {
+  font-size: 12px;
+  color: #909399;
 }
 
 .session-item {
