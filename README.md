@@ -643,4 +643,31 @@ const handleStatusChange = async (newStatus) => {
 3. 全局搜索 `from '@/mock/index.js'` 的引用路径，替换为 `from '@/api/xxx.js'`。
 4. 确保所有网络请求的错误处理遵循 `.rules/02-api-contract.md` 的统一响应体解析逻辑。
 
-# Latest Update: Mon Apr 27 00:46:32 CST 2026
+---
+
+## 九、开发规范索引
+
+本项目制定了严格的工程规范体系，存放于项目根目录 `.rules/` 文件夹中。所有贡献者在提交代码前必须阅读并遵循对应规范。
+
+| 规范文件 | 管辖范围 | 核心要求 |
+|----------|----------|----------|
+| `01-dev-spirit.md` | 代码准则 | 外科手术式修改、注释四类场景强制标注、交付可验证 |
+| `02-api-contract.md` | API 契约 | 统一响应体 `{ code, message, data, trace_id }`、快照存储原则 |
+| `03-ui-style.md` | UI 样式 | 零妥协 UI/UX、激活态三合一、防撞规范 |
+| `04-security.md` | 安全规范 | 数值边界锁死、凭证生命周期、高危操作摩擦延迟 |
+| `05-demo-experience.md` | 演示体验 | Demo 账号豁免规则、强制交互延迟、错误兜底策略 |
+
+**快速查阅路径**：
+
+```bash
+# 查看所有规范文件
+ls .rules/
+
+# 查看特定规范
+cat .rules/01-dev-spirit.md
+cat .rules/05-demo-experience.md
+```
+
+---
+
+# Latest Update: Mon Apr 27 01:32:00 CST 2026
