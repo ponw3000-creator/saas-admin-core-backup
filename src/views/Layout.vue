@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import {
   ChatDotRound,
   Tickets,
@@ -16,6 +17,7 @@ import Watermark from '@/components/Watermark.vue'
 import ProAvatar from '@/components/ProAvatar/index.vue'
 
 const chatStore = useChatStore()
+const router = useRouter()
 const isSuperAdmin = computed(() => chatStore.currentUserRole === 'super_admin')
 
 const roleLabels = {
@@ -65,7 +67,7 @@ onMounted(() => {
 })
 
 const handlePersonalCenter = () => {
-  ElMessage.info('跳转到个人中心')
+  router.push('/profile')
 }
 
 const handleLogout = () => {

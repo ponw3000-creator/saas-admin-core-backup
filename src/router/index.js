@@ -106,6 +106,12 @@ const routes = [
         name: 'ChannelSetting',
         meta: { title: '渠道接入', permission: 'menu:channel' },
         component: () => import('@/views/Setting/Channel.vue')
+      },
+      {
+        path: 'profile',
+        name: 'Profile',
+        meta: { title: '个人中心' },
+        component: () => import('@/views/Profile/index.vue')
       }
     ]
   }

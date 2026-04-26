@@ -84,3 +84,116 @@ const processedSessions = computed(() => {
 2. **✅ [允许并鼓励] 复杂数学计算公式注释**：在涉及多维度加权计算、单位换算（如毫秒转秒）、或非直觉的算术表达式旁，必须保留单行注释解释其推导逻辑或计算目的。
 3. **✅ [允许并鼓励] 业务坑位/妥协逻辑标注**：当代码为了兼容特殊的历史数据、处理边缘场景，或妥协于某些特定的业务奇葩需求而显得"反常规"时，必须使用单行注释标明原因（例如：`// 注意：这里为了兼容微信小程序的旧版来源标记，暂时跳过时间校验`）。
 
+### 🛡️ [强制] 边界异常与极致体验防御规范 (Edge Cases & UX Bounds)
+
+> **核心原则**：在开发任何交互链路时，**严禁只处理"理想状态（Happy Path）"**。每一个用户操作都必须在逻辑上防御弱网、异常数据、意外中断等非标准流转。
+
+---
+
+#### 1. 弱网环境与防重复提交 (Weak Network Defense)
+
+| 要求 | 实施细则 |
+|------|----------|
+| **状态锁** | 所有触发网络请求（CRUD）的按钮，在请求发出瞬间必须立即绑定 `loading` 属性或设为 `disabled`，严防用户在弱网下连续点击产生脏数据 |
+| **超时兜底** | 所有的异步请求必须被 `try...catch` 包裹。在 `catch` 块中必须提供人类可读的错误提示（如 `ElMessage.error('网络开小差了，请重试')`），**严禁静默失败（Silent Failure）** |
+| **Loading 互斥** | 同一操作类型的多个按钮（如"保存"和"取消"），在 loading 期间必须互斥显示，避免用户混淆操作状态 |
+
+**达标代码示例**：
+
+```js
+const handleSave = async () => {
+  if (loading.value) return  // 防御：防止重复点击
+  loading.value = true
+  try {
+    await saveApi(formData)
+    ElMessage.success('保存成功')
+    dialogVisible.value = false
+    resetFields()  // 成功后清理状态
+  } catch (error) {
+    ElMessage.error('保存失败：' + (error.message || '网络开小差了，请重试'))
+  } finally {
+    loading.value = false  // 无论成功失败都必须解锁
+  }
+}
+```
+
+---
+
+#### 2. 表单中断与数据流转机制 (Form Interruption & State Flow)
+
+##### 2.1 脏数据防丢拦截 (Dirty Check)
+
+当用户在表单/弹窗中输入了数据但未保存，尝试点击"取消"、"关闭"或物理后退时，如果检测到数据已变更（脏状态），**必须**使用弹窗拦截提示：
+
+```js
+// 检测脏数据：比较当前值与初始值
+const isDirty = computed(() => {
+  return JSON.stringify(currentForm) !== JSON.stringify(initialForm)
+})
+
+const handleClose = async () => {
+  if (isDirty.value) {
+    try {
+      await ElMessageBox.confirm('当前有未保存的修改，确定要离开吗？', '提示', {
+        confirmButtonText: '确定离开',
+        cancelButtonText: '继续编辑',
+        type: 'warning'
+      })
+      // 用户确认离开，清理状态并关闭
+      resetFields()
+      dialogVisible.value = false
+    } catch {
+      // 用户取消，留在当前页面
+    }
+  } else {
+    // 无脏数据，直接关闭
+    dialogVisible.value = false
+  }
+}
+```
+
+##### 2.2 状态强制清理 (State Reset)
+
+当用户**确认取消**或**成功提交**后关闭表单时，必须彻底清理当前组件的响应式表单对象：
+
+| 场景 | 必须执行的操作 |
+|------|---------------|
+| 成功提交后关闭 | `formRef.value?.resetFields()` + 清空 `reactive` 响应式对象 |
+| 取消关闭 | `formRef.value?.resetFields()` + 清空 `reactive` 响应式对象 |
+| 弹窗关闭事件 | 同时绑定 `@close` 生命周期执行 `resetFields()` |
+
+> **幽灵 Bug 警示**：如果 `resetFields()` 后不手动清空 `reactive` 对象中的数组字段（如 `relatedQuestions: []`），下次打开时旧数据会"幽灵残留"。
+
+##### 2.3 上下文保持 (Context Retention)
+
+从列表页进入详情/新建页，再取消返回原页面时，前端应在能力范围内尽量保持：
+
+- ✅ 原列表的筛选条件（filter 表单状态）
+- ✅ Tab 选项（当前激活的 tab name）
+- ✅ 分页页码（current page）
+- ❌ 不重新请求列表数据（除非必要）
+
+**实现建议**：使用 `sessionStorage` 或 Vue 的 `provide/inject` 向上共享状态，避免依赖父组件层层传递。
+
+---
+
+#### 3. 极致体验：非功能性约束
+
+| 场景 | 要求 |
+|------|------|
+| **异步加载中的按钮** | 必须使用 `loading` + `disabled` 双保险，防止聚焦后键盘回车误触发 |
+| **分页切换** | 切换页码后自动滚动到表格顶部（`scrollIntoView` 或 `el-table` 的 `scrollTop`） |
+| **空状态页面** | 所有表格/列表必须配置 `empty` 插槽或 `empty-text`，严禁出现白屏或空白区域 |
+| **长文本截断** | 表格内超过 20 字符的文本必须使用 `show-overflow-tooltip` 或手动截断并 hover 显示完整内容 |
+
+---
+
+#### 4. 绝对禁令
+
+| ❌ 严禁做法 | 后果 |
+|-------------|------|
+| 只处理 `try` 不处理 `catch` | 静默失败，用户不知道操作是否成功 |
+| 不 `resetFields()` 直接关闭弹窗 | 下次打开时出现"幽灵数据"，用户可能保存旧数据 |
+| `loading` 状态只绑按钮不安禁 `disabled` | 聚焦后回车仍可触发重复提交 |
+| 空表格不配置空状态提示 | 用户以为页面加载失败，产生不必要的焦虑 |
+
