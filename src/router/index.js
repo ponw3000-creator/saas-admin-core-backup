@@ -122,4 +122,22 @@ const router = createRouter({
   routes
 })
 
+router.beforeEach((to, from, next) => {
+  const publicPaths = ['/login', '/login/']
+  const isPublicPath = publicPaths.some(path => to.path === path || to.path.startsWith(path))
+
+  if (isPublicPath) {
+    next()
+    return
+  }
+
+  const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token')
+  if (!token) {
+    next({ path: '/login', query: { redirect: to.fullPath } })
+    return
+  }
+
+  next()
+})
+
 export default router

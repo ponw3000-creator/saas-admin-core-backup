@@ -1,5 +1,5 @@
 <script setup>
-import { reactive, ref, computed, onMounted } from 'vue'
+import { reactive, ref, computed, nextTick, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import ProHelp from '@/components/ProHelp/index.vue'
@@ -281,6 +281,7 @@ const toggleMode = () => {
     clearInterval(countdownTimer)
     countdownTimer = null
   }
+  loginFormRef.value?.resetFields()
 }
 
 const toggleToResetMode = () => {
@@ -299,6 +300,8 @@ const toggleToResetMode = () => {
     clearInterval(countdownTimer)
     countdownTimer = null
   }
+  loginFormRef.value?.resetFields()
+  resetFormRef.value?.resetFields()
 }
 
 const toggleToLoginMode = () => {
@@ -307,6 +310,29 @@ const toggleToLoginMode = () => {
   Object.keys(resetFormData).forEach(key => {
     resetFormData[key] = ''
   })
+  loginFormRef.value?.resetFields()
+  resetFormRef.value?.resetFields()
+}
+
+const handleQuickLogin = async (mode) => {
+  if (loading.value) return
+  isLoginMode.value = true
+  isResetMode.value = false
+
+  if (mode === 'admin') {
+    formData.enterpriseCode = 'DEMO-ENTERPRISE'
+    formData.account = 'admin'
+    formData.password = 'admin123'
+  } else {
+    formData.enterpriseCode = 'DEMO-ENTERPRISE'
+    formData.account = 'agent001'
+    formData.password = '123456'
+  }
+
+  formData.agreeProtocol = true
+
+  await nextTick()
+  handleSubmit()
 }
 
 const handleVerifyCode = () => {
@@ -653,9 +679,9 @@ const executeReset = async () => {
           <el-form-item v-if="!isResetMode" class="protocol-row">
             <el-checkbox v-model="formData.agreeProtocol">
               我已阅读并同意
-              <a class="protocol-link" href="#">《服务协议》</a>
+              <a class="protocol-link" href="javascript:void(0)">《服务协议》</a>
               与
-              <a class="protocol-link" href="#">《隐私政策》</a>
+              <a class="protocol-link" href="javascript:void(0)">《隐私政策》</a>
             </el-checkbox>
           </el-form-item>
 
@@ -671,6 +697,34 @@ const executeReset = async () => {
               {{ isLoginMode ? '登 录' : '创建企业账号' }}
             </el-button>
           </el-form-item>
+
+          <div v-if="!isResetMode && isLoginMode" class="quick-login-section">
+            <div class="quick-login-divider">
+              <span class="divider-line"></span>
+              <span class="divider-text">快捷体验</span>
+              <span class="divider-line"></span>
+            </div>
+            <div class="quick-login-buttons">
+              <el-button
+                class="quick-login-btn admin-btn"
+                size="large"
+                :disabled="loading"
+                @click="handleQuickLogin('admin')"
+              >
+                <span class="btn-icon">👑</span>
+                <span class="btn-label">管理员模式</span>
+              </el-button>
+              <el-button
+                class="quick-login-btn agent-btn"
+                size="large"
+                :disabled="loading"
+                @click="handleQuickLogin('agent')"
+              >
+                <span class="btn-icon">💬</span>
+                <span class="btn-label">客服模式</span>
+              </el-button>
+            </div>
+          </div>
         </el-form>
 
         <div v-if="isResetMode" class="reset-form">
@@ -1254,4 +1308,71 @@ const executeReset = async () => {
     text-decoration: underline;
   }
 }
-</style>
+
+.quick-login-section {
+  margin-top: 16px;
+}
+
+.quick-login-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.divider-line {
+  flex: 1;
+  height: 1px;
+  background: #e4e4e7;
+}
+
+.divider-text {
+  font-size: 12px;
+  color: #909399;
+  white-space: nowrap;
+}
+
+.quick-login-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.quick-login-btn {
+  flex: 1;
+  height: 40px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.admin-btn {
+  background: linear-gradient(135deg, #409eff 0%, #337ecc 100%);
+  border: none;
+  color: #fff;
+}
+
+.admin-btn:hover {
+  background: linear-gradient(135deg, #66b1ff 0%, #409eff 100%);
+}
+
+.agent-btn {
+  background: #f0f2f5;
+  border: 1px solid #dcdfe6;
+  color: #606266;
+}
+
+.agent-btn:hover {
+  background: #e4e8ec;
+  border-color: #c0c4cc;
+}
+
+.btn-icon {
+  font-size: 16px;
+}
+
+.btn-label {
+  font-weight: 500;
+}

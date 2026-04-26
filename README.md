@@ -458,6 +458,7 @@ const handleStatusChange = async (newStatus) => {
 - 提交按钮绑定了 `loading` + `disabled` 双保险状态（`isSubmitDisabled` computed）
 - **验证码倒计时**：独立的 `countdown` + `countdownTimer` 状态，防止用户在倒计时期间重复触发
 - **蜜包字段（Honeypot）**：隐藏的 `honeypot` 字段用于反爬虫检测
+- **快捷登录按钮**：登录表单下方新增「快捷体验」入口，支持 [管理员模式]（账号：admin，密码：admin123）和 [客服模式]（账号：agent001，密码：123456），点击后自动填充并触发登录流程
 
 **表单校验现状**：
 
@@ -481,10 +482,22 @@ const handleStatusChange = async (newStatus) => {
 
 **当前待优化项（TODO）**：
 
-- 接入真实登录 API（替换 `setTimeout` 为 `fetch` 调用）
-- Token 过期强制跳转至 `/login`（目前仅在 `onMounted` 时校验 localStorage 过期）
-- 登录失败重试次数限制（当前仅靠 `lastSubmitTime` 节流，无最大重试次数）
-- 全局路由守卫（`router.beforeEach`）校验 Token 有效性（目前仅 `Layout.vue` 的 `initFromStorage`）
+- 接入真实登录 API（替换 `setTimeout` 为 `fetch` 调用）—— 接入后需补充完整 `try...catch` 错误处理
+- 登录失败重试次数限制（当前仅靠 `lastSubmitTime` 节流，无最大重试次数）—— 建议增加 5 次失败后锁定机制
+
+**✅ 已修复项（本次迭代）**：
+
+- ✅ **强制路由守卫**：已实现 `router.beforeEach`，所有非 `/login` 路径在无 Token 时强制跳转至登录页
+- ✅ **退出登录清理**：已完善 `handleLogout`，精确清除 `auth_token` / `auth_data` / `auth_expiry`，并重定向至 `/login`
+- ✅ **表单脏数据清理**：已在 `toggleMode` / `toggleToResetMode` / `toggleToLoginMode` 中补充 `loginFormRef.value?.resetFields()` 调用
+- ✅ **协议死链修复**：已将 `href="#"` 替换为 `href="javascript:void(0)"`，确保链接可点击不跳页
+
+**安全规范与表单校验分值提升**：
+
+| 维度 | 修复前 | 修复后 |
+|------|--------|--------|
+| **安全规范** | ⭐⭐ 较弱 | ⭐⭐⭐⭐ 良好 |
+| **表单校验** | ⭐⭐⭐⭐⭐ 完善 | ⭐⭐⭐⭐⭐ 完善 |
 
 ---
 

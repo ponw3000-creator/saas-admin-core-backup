@@ -71,7 +71,13 @@ const handlePersonalCenter = () => {
 }
 
 const handleLogout = () => {
+  localStorage.removeItem('auth_token')
+  localStorage.removeItem('auth_data')
+  localStorage.removeItem('auth_expiry')
+  sessionStorage.removeItem('auth_token')
+  sessionStorage.removeItem('auth_data')
   ElMessage.success('已退出登录')
+  router.push('/login')
 }
 </script>
 
