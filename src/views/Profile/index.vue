@@ -108,7 +108,7 @@ const handleChangePassword = async () => {
     ElMessage.success('密码修改成功')
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error(error.message || '密码修改失败')
+      ElMessage.error('密码修改失败，请重试')
     }
   } finally {
     isSaving.value = false

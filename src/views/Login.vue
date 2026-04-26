@@ -65,9 +65,18 @@ const validateCompanyName = async (rule, value, callback) => {
   callback()
 }
 
+const DEMO_ACCOUNTS = ['admin', 'agent001']
+const DEMO_DELAY = 1200
+const LOADING_DELAY = 1500
+
+const isDemoAccount = (account) => DEMO_ACCOUNTS.includes(account)
+
 const validateAccountRule = (rule, value, callback) => {
   if (!value) {
     return callback(new Error('请输入登录账号'))
+  }
+  if (isDemoAccount(value)) {
+    return callback()
   }
   if (!validateAccount(value)) {
     return callback(new Error('账号必须为邮箱或手机号格式'))
@@ -78,6 +87,9 @@ const validateAccountRule = (rule, value, callback) => {
 const validatePasswordRule = (rule, value, callback) => {
   if (!value) {
     return callback(new Error('请输入密码'))
+  }
+  if (isDemoAccount(formData.account)) {
+    return callback()
   }
   if (!validatePassword(value)) {
     return callback(new Error('密码至少8位，包含字母和数字'))
@@ -431,7 +443,7 @@ const handleSubmit = async () => {
 const executeLogin = async () => {
   loading.value = true
 
-  await new Promise(resolve => setTimeout(resolve, 1500))
+  await new Promise(resolve => setTimeout(resolve, LOADING_DELAY))
 
   loading.value = false
 
@@ -454,16 +466,14 @@ const executeLogin = async () => {
     }
 
     ElMessage.success('登录成功，正在跳转...')
-    setTimeout(() => {
-      router.push('/chat')
-    }, 1000)
+    await new Promise(resolve => setTimeout(resolve, DEMO_DELAY))
+    router.push('/chat')
     return
   }
 
   ElMessage.success('注册成功，正在跳转...')
-  setTimeout(() => {
-    router.push('/chat')
-  }, 1000)
+  await new Promise(resolve => setTimeout(resolve, DEMO_DELAY))
+  router.push('/chat')
 }
 
 const handleResetSubmit = async () => {
@@ -711,8 +721,7 @@ const executeReset = async () => {
                 :disabled="loading"
                 @click="handleQuickLogin('admin')"
               >
-                <span class="btn-icon">👑</span>
-                <span class="btn-label">管理员模式</span>
+                管理员模式
               </el-button>
               <el-button
                 class="quick-login-btn agent-btn"
@@ -720,8 +729,7 @@ const executeReset = async () => {
                 :disabled="loading"
                 @click="handleQuickLogin('agent')"
               >
-                <span class="btn-icon">💬</span>
-                <span class="btn-label">客服模式</span>
+                客服模式
               </el-button>
             </div>
           </div>
@@ -1310,70 +1318,59 @@ const executeReset = async () => {
 }
 
 .quick-login-section {
-  margin-top: 16px;
+  margin-top: var(--spacing-md, 16px);
 }
 
 .quick-login-divider {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
+  gap: var(--spacing-sm, 12px);
+  margin-bottom: var(--spacing-sm, 12px);
 }
 
 .divider-line {
   flex: 1;
   height: 1px;
-  background: #e4e4e7;
+  background: var(--color-border, #e4e4e7);
 }
 
 .divider-text {
-  font-size: 12px;
-  color: #909399;
+  font-size: var(--font-size-xs, 12px);
+  color: var(--color-text-placeholder, #909399);
   white-space: nowrap;
 }
 
 .quick-login-buttons {
   display: flex;
-  gap: 12px;
+  gap: var(--spacing-sm, 12px);
 }
 
 .quick-login-btn {
   flex: 1;
-  height: 40px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  font-size: 14px;
+  height: var(--btn-height-lg, 40px);
+  border-radius: var(--radius-md, 8px);
+  font-size: var(--font-size-sm, 14px);
+  font-weight: 500;
 }
 
 .admin-btn {
-  background: linear-gradient(135deg, #409eff 0%, #337ecc 100%);
+  background: var(--color-primary, #409eff);
   border: none;
   color: #fff;
 }
 
 .admin-btn:hover {
-  background: linear-gradient(135deg, #66b1ff 0%, #409eff 100%);
+  background: var(--color-primary-light, #66b1ff);
 }
 
 .agent-btn {
-  background: #f0f2f5;
-  border: 1px solid #dcdfe6;
-  color: #606266;
+  background: var(--color-fill-bg, #f0f2f5);
+  border: 1px solid var(--color-border, #dcdfe6);
+  color: var(--color-text-regular, #606266);
 }
 
 .agent-btn:hover {
-  background: #e4e8ec;
-  border-color: #c0c4cc;
-}
-
-.btn-icon {
-  font-size: 16px;
-}
-
-.btn-label {
-  font-weight: 500;
+  background: var(--color-fill-bg-light, #e4e8ec);
+  border-color: var(--color-border-light, #c0c4cc);
 }
 </style>

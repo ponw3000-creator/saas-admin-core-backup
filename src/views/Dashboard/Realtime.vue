@@ -31,8 +31,12 @@ const blindSpots = ref([
 ])
 
 const fetchDashboardData = async () => {
-  await new Promise(resolve => setTimeout(resolve, 300))
-  trackEvent('dashboard_view', { range: dateRange.value })
+  try {
+    await new Promise(resolve => setTimeout(resolve, 300))
+    trackEvent('dashboard_view', { range: dateRange.value })
+  } catch (error) {
+    console.error('获取看板数据失败:', error)
+  }
 }
 
 const handleExport = () => {

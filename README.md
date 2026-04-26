@@ -575,3 +575,5 @@ const handleStatusChange = async (newStatus) => {
 2. 将 Mock 函数上方的 `TODO: [API对接]` 注释替换为真实 `fetch` 调用。
 3. 全局搜索 `from '@/mock/index.js'` 的引用路径，替换为 `from '@/api/xxx.js'`。
 4. 确保所有网络请求的错误处理遵循 `.rules/02-api-contract.md` 的统一响应体解析逻辑。
+
+# Latest Update: Mon Apr 27 00:46:32 CST 2026

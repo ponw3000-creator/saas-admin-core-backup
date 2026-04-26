@@ -7,8 +7,12 @@ export const useGlobalStore = defineStore('global', {
   }),
   actions: {
     async initSystemDict() {
-      const dict = await fetchMetricsDict()
-      this.metricsDict = dict
+      try {
+        const dict = await fetchMetricsDict()
+        this.metricsDict = dict
+      } catch (error) {
+        console.error('初始化系统字典失败:', error)
+      }
     }
   }
 })
