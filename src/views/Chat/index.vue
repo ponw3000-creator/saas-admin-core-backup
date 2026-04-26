@@ -243,7 +243,7 @@ const sendMessage = async () => {
       console.log('[路由模拟] 请求本地私有模型...')
       await new Promise(resolve => setTimeout(resolve, 3000))
     }
-    const realAnswer = await chatWithRealAI(userText, activeSession.value.fullHistory)
+    const realAnswer = await chatWithRealAI(userText, activeSession.value)
     const aiTime = new Date()
     const aiTimeStr = `${aiTime.getHours().toString().padStart(2, '0')}:${aiTime.getMinutes().toString().padStart(2, '0')}`
     activeSession.value.fullHistory.push({

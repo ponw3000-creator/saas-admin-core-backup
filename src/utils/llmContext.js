@@ -20,45 +20,32 @@ export const buildChatPrompt = (chatHistory, round = DEFAULT_ROUND) => {
   return payload
 }
 
-export const chatWithRealAI = async (message, chatHistory) => {
-  const apiKey = import.meta.env.VITE_DIFY_CHAT_API_KEY
-  const apiUrl = import.meta.env.VITE_DIFY_CHAT_API_URL
-
-  const contextMessages = buildChatPrompt(chatHistory)
-
-  const systemPrompt =
-    '你是一位专业、友好的智能客服。请根据上下文信息，准确回答用户问题。'
-
-  const messages = [
-    { role: 'system', content: systemPrompt },
-    ...contextMessages,
-    { role: 'user', content: message }
-  ]
+export const chatWithRealAI = async (message, sessionContext = {}) => {
+  const apiUrl = '/api/v1/chat'
 
   try {
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        inputs: {},
-        query: message,
-        response_mode: 'blocking',
-        user: 'frontend-test-user'
+        tenant_id: 'tenant_001',
+        channel_id: sessionContext.source || 'web',
+        session_id: `sess_${sessionContext.id || Date.now()}`,
+        user_message: message
       })
     })
 
     if (!response.ok) {
-      throw new Error(`Dify 聊天接口请求失败: ${response.status}`)
+      throw new Error(`SaaS Agent 后端请求失败，状态码: ${response.status}`)
     }
 
     const data = await response.json()
-    return data.answer || '抱歉，AI 暂时无法回复，请稍后再试。'
+    return data.reply_text || '抱歉，服务未返回有效回复。'
   } catch (error) {
-    console.error('Dify 聊天接口报错:', error)
-    return `抱歉，AI 服务暂时不可用。错误信息：${error.message}`
+    console.error('自研 Agent 接口报错:', error)
+    return `【系统提示】网络连接异常，未能获取回复。错误详情：${error.message}`
   }
 }
 
