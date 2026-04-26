@@ -1376,3 +1376,4 @@ const executeReset = async () => {
 .btn-label {
   font-weight: 500;
 }
+</style>
