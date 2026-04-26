@@ -1,6 +1,11 @@
 # SaaS Admin Workbench
 
-企业级 SaaS 客服工作台 —— 前端架构设计与研发规范文档。
+> AI 驱动的 SaaS 客服 / 管理双模工作台 —— 前端架构设计与研发规范文档。
+
+[![Vercel](https://img.shields.io/badge/Vercel-CI%2FCD-brightgreen?style=flat-square)](https://vercel.com)
+[![Vue](https://img.shields.io/badge/Vue-3.5-green?style=flat-square&logo=vue.js)](https://vuejs.org)
+[![Vite](https://img.shields.io/badge/Vite-8.0-blue?style=flat-square&logo=vite)](https://vitejs.dev)
+[![ElementPlus](https://img.shields.io/badge/Element%20Plus-2.13-brightgreen?style=flat-square)](https://element-plus.org)
 
 ---
 
@@ -16,7 +21,42 @@
 
 ---
 
-## 二、技术栈选型
+## 二、快速开始 / 演示入口
+
+### 2.1 演示环境
+
+本项目提供**一键演示模式**，无需任何后端配置即可体验完整功能。
+
+#### 演示账号
+
+| 模式 | 账号 | 密码 | 说明 |
+|------|------|------|------|
+| **超管体验** | `admin` | `admin123` | 具备最高权限，可访问全部 15 个功能模块 |
+| 客服模式 | `agent001` | `123456` | 客服角色，可体验接待工作台 |
+
+#### 如何进入演示
+
+1. 启动开发服务器：`npm run dev`
+2. 打开浏览器访问 `http://localhost:5173`
+3. 点击登录页底部的 **「超管体验」** 按钮
+4. 系统将自动填充账号密码并登录，跳转至工作台
+
+#### 超管模式可访问的核心模块
+
+| 模块 | 路由 | 说明 |
+|------|------|------|
+| 实时大屏 | `/dashboard/realtime` | AI 效能实时数据可视化 |
+| AI 效能分析 | `/dashboard/performance` | 转化率/满意度深度分析 |
+| AI 模型配置 | `/setting/ai` | Dify / OpenAI 等模型接入 |
+| LLM 基座配置 | `/setting/llm` | 大模型推理参数配置 |
+| 团队与权限 | `/setting/team` | 组织架构与人员管理 |
+| 角色管理 | `/setting/role` | RBAC 权限矩阵配置 |
+| 操作日志 | `/setting/oplog` | 全量操作行为审计 |
+| 渠道接入 | `/setting/channel` | 多渠道统一接入管理 |
+
+---
+
+## 三、技术栈选型
 
 | 层级 | 技术选型 | 版本 |
 |------|----------|------|
@@ -35,6 +75,33 @@
 - 项目**不使用 axios**，所有网络请求均通过原生 `fetch` 封装于 `src/utils/llmContext.js`。
 - 所有 API 调用均遵循 `.rules/02-api-contract.md` 定义的统一响应体结构 `{ code, message, data, trace_id }`。
 - 前端**未配置跨域代理**（`vite.config.js` 仅含基础 alias），生产环境需后端配置 CORS 或 Nginx 反向代理。
+
+**动态路由与角色鉴权（RBAC）**：
+
+系统内置四层角色体系（`super_admin > admin > leader > agent`），通过 `ROLE_WEIGHT_MAP` 与 `ROLE_PERMISSIONS_MAP` 实现**职责权重 + 菜单权限双重隔离**：
+
+```javascript
+// src/store/chatStore.js
+const ROLE_WEIGHT_MAP = {
+  super_admin: 100,   // 可管理所有角色
+  admin: 80,          // 可管理 admin/leader/agent
+  leader: 50,         // 可管理 leader/agent
+  agent: 10           // 仅可操作自己
+}
+
+const ROLE_PERMISSIONS_MAP = {
+  super_admin: ['*'],  // 通配符 = 全量权限 bypass
+  admin: ['menu:ai', 'menu:llm', 'menu:team', ...],
+  leader: ['menu:preferences', 'menu:knowledge', ...],
+  agent: ['menu:preferences', 'menu:knowledge', ...]
+}
+```
+
+路由守卫 `router.beforeEach` 在用户访问任意业务页面前校验 Token，Layout 侧边栏通过 `visibleMenus` computed 根据当前角色动态渲染菜单项。
+
+**部署与 CI/CD**：
+
+项目已接入 **Vercel CI/CD** 流水线：所有代码推送至 `origin main` 后，自动触发 Vercel Build 并部署至生产环境。
 
 ---
 
