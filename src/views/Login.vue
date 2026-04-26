@@ -331,7 +331,7 @@ const handleQuickLogin = async (mode) => {
   isLoginMode.value = true
   isResetMode.value = false
 
-  if (mode === 'admin') {
+  if (mode === 'super_admin') {
     formData.enterpriseCode = 'DEMO-ENTERPRISE'
     formData.account = 'admin'
     formData.password = 'admin123'
@@ -449,10 +449,12 @@ const executeLogin = async () => {
 
   if (isLoginMode.value) {
     const token = 'mock_token_' + Date.now()
+    const isDemo = isDemoAccount(formData.account)
     const authData = {
       token,
       enterpriseCode: formData.enterpriseCode,
       account: formData.account,
+      role: isDemo ? 'super_admin' : 'agent',
       timestamp: Date.now()
     }
 
@@ -460,9 +462,13 @@ const executeLogin = async () => {
       localStorage.setItem('auth_token', token)
       localStorage.setItem('auth_data', JSON.stringify(authData))
       localStorage.setItem('auth_expiry', String(Date.now() + 7 * 24 * 60 * 60 * 1000))
+      localStorage.setItem('saas_role', authData.role)
+      localStorage.setItem('saas_permissions', JSON.stringify(isDemo ? ['*'] : []))
     } else {
       sessionStorage.setItem('auth_token', token)
       sessionStorage.setItem('auth_data', JSON.stringify(authData))
+      sessionStorage.setItem('saas_role', authData.role)
+      sessionStorage.setItem('saas_permissions', JSON.stringify(isDemo ? ['*'] : []))
     }
 
     ElMessage.success('登录成功，正在跳转...')
@@ -719,9 +725,9 @@ const executeReset = async () => {
                 class="quick-login-btn admin-btn"
                 size="large"
                 :disabled="loading"
-                @click="handleQuickLogin('admin')"
+                @click="handleQuickLogin('super_admin')"
               >
-                管理员模式
+                超管体验
               </el-button>
               <el-button
                 class="quick-login-btn agent-btn"
