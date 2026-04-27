@@ -5,7 +5,7 @@ import { marked } from 'marked'
 import { Splitpanes, Pane } from 'splitpanes'
 import 'splitpanes/dist/splitpanes.css'
 import { ChatDotRound, User, CircleCheck, Promotion, ArrowUp, Lightning } from '@element-plus/icons-vue'
-import { buildChatPrompt, generateRealSummary, chatWithRealAI } from '@/utils/llmContext'
+import { chatWithRealAI } from '@/utils/llmContext'
 import InfoLabel from '@/components/InfoLabel.vue'
 import { useAppStore } from '@/store/app'
 import { useChatStore } from '@/store/chatStore'
@@ -27,7 +27,6 @@ const sessions = ref([...chatSessionsMockData])
 const activeSessionId = ref(1)
 const messageInput = ref('')
 const isAiThinking = ref(false)
-const isSummarizing = ref(false)
 const summaryData = ref(null)
 const chatScrollRef = ref(null)
 
@@ -108,26 +107,40 @@ const processedSessions = computed(() => {
 const selectSession = async (id) => {
   activeSessionId.value = id
 
+  const sessionData = sessionCache.value.has(id)
+    ? sessionCache.value.get(id)
+    : sessions.value.find(s => s.id === id)
+
   if (sessionCache.value.has(id)) {
-    console.log('Cache Hit: 命中缓存')
     const data = sessionCache.value.get(id)
     sessionCache.value.delete(id)
     sessionCache.value.set(id, data)
   } else {
-    console.log('Cache Miss: 模拟从后端/Redis加载')
-    const sessionData = sessions.value.find(s => s.id === id)
-
     if (sessionCache.value.size >= MAX_CACHE_SIZE) {
       const oldestKey = sessionCache.value.keys().next().value
       sessionCache.value.delete(oldestKey)
     }
-    sessionCache.value.set(id, sessionData)
+    sessionCache.value.set(id, activeSession.value)
   }
 
   messageInput.value = ''
-  summaryData.value = null
   isAiThinking.value = false
   trackEvent('select_session', { sessionId: id })
+
+  if (sessionData?.summary_text) {
+    summaryData.value = {
+      content: sessionData.summary_text,
+      tags: sessionData.tags || [],
+      suggestedAction: sessionData.suggested_action || '暂无建议'
+    }
+  } else {
+    summaryData.value = {
+      content: '后端暂未返回摘要，请继续对话',
+      tags: sessionData?.tags || [],
+      suggestedAction: '暂无建议'
+    }
+  }
+
   setTimeout(scrollToBottom, 100)
 }
 
@@ -143,7 +156,9 @@ const quickReplyListRef = ref(null)
 const selectedQuickReplyIndex = ref(0)
 
 const handleInput = (e) => {
-  const value = e.target.value
+  if (!activeSession?.value) return
+  if (!e?.target) return
+  const value = e.target.value ?? ''
 
   if (value.endsWith('/')) {
     showQuickReplyPopup.value = true
@@ -221,15 +236,19 @@ const sendMessage = async () => {
     return
   }
   if (!messageInput.value.trim()) return
+  if (!activeSession.value) {
+    ElMessage.warning('请先选择一个会话')
+    return
+  }
+
+  const originSession = activeSession.value
+  const originSessionId = originSession.id
   const userText = messageInput.value.trim()
   const now = new Date()
   const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`
 
-  activeSession.value.fullHistory.push({ id: ++msgIdCounter, role: 'user', text: userText, time: timeStr })
-  scrollToBottom()
-
-  const payload = buildChatPrompt(activeSession.value.fullHistory)
-  console.log('【发送给大模型的真实报文】:', payload)
+  originSession.fullHistory.push({ id: ++msgIdCounter, role: 'user', text: userText, time: timeStr })
+  if (activeSessionId.value === originSessionId) scrollToBottom()
 
   messageInput.value = ''
   trackEvent('send_message', { content: userText })
@@ -237,24 +256,40 @@ const sendMessage = async () => {
   isAiThinking.value = true
   try {
     if (chatStore.activeModelId === 1) {
-      console.log('[路由模拟] 请求外部 API...')
       await new Promise(resolve => setTimeout(resolve, 500))
     } else {
-      console.log('[路由模拟] 请求本地私有模型...')
       await new Promise(resolve => setTimeout(resolve, 3000))
     }
-    const realAnswer = await chatWithRealAI(userText, activeSession.value)
+    const aiResponse = await chatWithRealAI(userText, originSession)
+    const realAnswer = aiResponse.reply_text
+
     const aiTime = new Date()
     const aiTimeStr = `${aiTime.getHours().toString().padStart(2, '0')}:${aiTime.getMinutes().toString().padStart(2, '0')}`
-    activeSession.value.fullHistory.push({
+    originSession.fullHistory.push({
       id: ++msgIdCounter,
       role: 'assistant',
       text: realAnswer,
       time: aiTimeStr
     })
+
+    if (aiResponse.summary_text) {
+      const existingTags = originSession.tags || []
+      const incomingTags = aiResponse.intent_tags || []
+      originSession.tags = [...new Set([...existingTags, ...incomingTags])]
+      const incomingAction = aiResponse.suggested_action || aiResponse.suggestedAction
+      originSession.suggested_action = incomingAction || '暂无建议'
+
+      if (activeSessionId.value === originSessionId) {
+        summaryData.value = {
+          content: aiResponse.summary_text,
+          tags: originSession.tags,
+          suggestedAction: incomingAction || '暂无建议'
+        }
+      }
+    }
   } finally {
     isAiThinking.value = false
-    scrollToBottom()
+    if (activeSessionId.value === originSessionId) scrollToBottom()
   }
 }
 
@@ -268,14 +303,24 @@ const handleTransfer = () => {
 }
 
 const handleGenerateSummary = async () => {
-  if (isSummarizing.value) return
-  isSummarizing.value = true
-  summaryData.value = null
-  try {
-    const result = await generateRealSummary(activeSession.value.fullHistory)
-    summaryData.value = result
-  } finally {
-    isSummarizing.value = false
+  if (!activeSession.value) {
+    ElMessage.warning('请先选择一个会话')
+    return
+  }
+  const stored = activeSession.value.summary_text
+
+  if (stored) {
+    summaryData.value = {
+      content: stored,
+      tags: activeSession.value.tags || [],
+      suggestedAction: activeSession.value.suggested_action || '暂无建议'
+    }
+  } else {
+    summaryData.value = {
+      content: '后端暂未返回摘要，请继续对话',
+      tags: activeSession.value.tags || [],
+      suggestedAction: activeSession.value.suggested_action || '暂无建议'
+    }
   }
 }
 </script>
@@ -416,23 +461,14 @@ const handleGenerateSummary = async () => {
             <el-button
               type="primary"
               size="small"
-              :loading="isSummarizing"
               @click="handleGenerateSummary"
             >
-              一键生成
+              刷新摘要
             </el-button>
           </div>
         </template>
 
-        <div v-if="isSummarizing" class="summary-loading">
-          <el-skeleton :rows="4" animated />
-        </div>
-
-        <div v-else-if="summaryData" class="summary-result">
-          <div class="summary-row">
-            <span class="summary-label">客户情绪</span>
-            <el-tag type="info" size="small">{{ summaryData.emotion }}</el-tag>
-          </div>
+        <div v-if="summaryData" class="summary-result">
           <div class="summary-row">
             <span class="summary-label">意图标签</span>
             <div class="summary-tags">
@@ -451,17 +487,19 @@ const handleGenerateSummary = async () => {
             <span class="summary-label">核心诉求</span>
             <p class="summary-content">{{ summaryData.content }}</p>
           </div>
-          <div class="summary-action-box">
+          <div class="summary-row">
             <span class="summary-label">AI 建议动作</span>
-            <p class="summary-action-text">{{ summaryData.suggestedAction }}</p>
+            <p
+              class="summary-action-text"
+              :class="{ urgent: summaryData?.suggestedAction?.includes('转人工') || summaryData?.suggestedAction?.includes('🚨') }"
+            >{{ summaryData?.suggestedAction || '暂无建议' }}</p>
           </div>
         </div>
 
         <div v-else class="summary-empty">
           <el-icon :size="32" class="summary-empty-icon"><ChatDotRound /></el-icon>
-          <p>点击上方「一键生成」</p>
-          <p>AI 将阅读全量会话记录</p>
-          <p>自动生成结构化摘要</p>
+          <p>发送消息后</p>
+          <p>AI 将自动生成摘要与建议</p>
         </div>
       </el-card>
 
@@ -1037,6 +1075,8 @@ const handleGenerateSummary = async () => {
   font-size: 12px;
   color: #909399;
   min-width: 56px;
+  flex-shrink: 0;
+  white-space: nowrap;
   line-height: 22px;
 }
 
@@ -1061,9 +1101,15 @@ const handleGenerateSummary = async () => {
 .summary-action-text {
   font-size: 13px;
   color: #409eff;
-  margin: 4px 0 0;
+  margin: 0;
   font-weight: 500;
-  line-height: 1.6;
+  line-height: 22px;
+  word-break: break-all;
+}
+
+.summary-action-text.urgent {
+  color: #f56c6c;
+  font-weight: 600;
 }
 
 .summary-empty {

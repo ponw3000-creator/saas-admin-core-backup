@@ -255,7 +255,6 @@ const handleSave = async () => {
   setTimeout(() => {
     saving.value = false
     ElMessage.success('企业资料已保存')
-    console.log('保存的企业资料：', enterprise)
   }, 800)
 }
 </script>

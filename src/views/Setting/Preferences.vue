@@ -118,7 +118,6 @@ const handleAvatarRemove = () => {
 const handleSave = () => {
   appStore.savePreferences(settings)
   ElMessage.success('系统偏好设置已保存')
-  console.log('保存的新配置：', settings)
 }
 </script>
 
